@@ -1,0 +1,7 @@
+
+# Exclude large directories
+gym-pybullet-drones/results/
+gym-pybullet-drones/Results/
+gym-pybullet-drones/tb_logs/
+gym-pybullet-drones/wandb/
+gym-pybullet-drones/venv/
