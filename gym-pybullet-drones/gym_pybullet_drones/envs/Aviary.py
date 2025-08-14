@@ -32,15 +32,18 @@ class Aviary(BaseRLAviary):
                     act=act
                     )
     def _computeReward(self):
-        state = self._getDroneStateVector(0)
-        ret = max(0, 2 - np.linalg.norm(self.TARGET_POS-state[0:3])**4)
-        return ret
+        s = self._getDroneStateVector(0)
+        d = np.linalg.norm(self.TARGET_POS - s[0:3])
+        # indices may differ in your state vector; adjust as needed
+        tilt = np.linalg.norm(s[7:9])         # roll/pitch rates or angles in your layout
+        vel  = np.linalg.norm(s[10:13])       # linear velocity
+
+        r = 2.0 - d**2 - 0.05*vel**2 - 0.1*tilt**2
+        return float(np.clip(r, 0.0, 2.0))
     def _computeTerminated(self):
-        state = self._getDroneStateVector(0)
-        if np.linalg.norm(self.TARGET_POS-state[0:3]) < .0001:
-            return True
-        else:
-            return False
+        s = self._getDroneStateVector(0)
+        d = np.linalg.norm(self.TARGET_POS - s[0:3])
+        return d < 0.05  # 5 cm is reasonable
     def _computeTruncated(self):
         state = self._getDroneStateVector(0)
         if (abs(state[0]) > 1.5 or abs(state[1]) > 1.5 or state[2] > 2.0 # Truncate when the drone is too far away

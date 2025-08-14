@@ -9,6 +9,7 @@ import torch as th
 from gym_pybullet_drones.envs.Aviary import Aviary
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold
 from stable_baselines3.common.evaluation import evaluate_policy
 from gym_pybullet_drones.utils.Logger import Logger
@@ -26,18 +27,27 @@ def run(multiagent=False, output_folder='Results', gui=True, plot=True, colab=Fa
     
     train_env = make_vec_env(Aviary,
                             env_kwargs=dict(obs=ObservationType('kin'), act=ActionType('rpm')),
-                            n_envs=1,
+                            n_envs=8,
                             seed=0
                             )
-        
-    eval_env = Aviary(obs=ObservationType('kin'), act=ActionType('rpm'))
-    learning_rate = 1e-3
+    train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.)
+    eval_env = DummyVecEnv([lambda: Aviary(obs=ObservationType('kin'), act=ActionType('rpm'))])
+    eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True, clip_obs=10.)
+
+    # Set evaluation env to not update stats
+    eval_env.training = False
+    eval_env.norm_reward = False
+
+    learning_rate = 1e-4
+    clip_range = 0.2
+    ent_coef = 0.01
     n_steps = 1024
-    batch_size = 32
-    n_epochs = 10
+    target_kl = 0.02
+    batch_size = 512
+    n_epochs = 4
     gamma = 0.99
-    policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=[64, 64])
-    Model = PPO("MlpPolicy", train_env,learning_rate=learning_rate,n_steps=n_steps,batch_size=batch_size,n_epochs=n_epochs,gamma=gamma,policy_kwargs=policy_kwargs,verbose=1,tensorboard_log="./tb_logs/")
+    policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=[128, 128])
+    Model = PPO("MlpPolicy", train_env,learning_rate=learning_rate,n_steps=n_steps,batch_size=batch_size,n_epochs=n_epochs,gamma=gamma,clip_range=clip_range,target_kl=target_kl,policy_kwargs=policy_kwargs,verbose=1,tensorboard_log="./tb_logs/")
     target_reward = 467
     
     wandb.init(
@@ -47,12 +57,12 @@ def run(multiagent=False, output_folder='Results', gui=True, plot=True, colab=Fa
         "policy_type": "MlpPolicy",
         "total_timesteps": 1e7,
         "env_name": "Aviary",
-        "learning_rate": 1e-3,
-        "n_steps": 1024,
-        "batch_size": 32,
-        "n_epochs": 10,
-        "gamma": 0.99,
-        "policy_kwargs": dict(activation_fn=th.nn.ReLU, net_arch=[64, 64])
+        "learning_rate": learning_rate,
+        "n_steps": n_steps,
+        "batch_size": batch_size,
+        "n_epochs": n_epochs,
+        "gamma": gamma,
+        "policy_kwargs": dict(activation_fn=th.nn.Tanh, net_arch=[64, 64])
     },
     sync_tensorboard=True,   # Auto-sync TensorBoard metrics
     monitor_gym=False,       # Auto-upload agent videos (requires Monitor wrapper)
