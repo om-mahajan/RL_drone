@@ -2,13 +2,14 @@ import os
 import time
 import numpy as np
 from stable_baselines3 import PPO
+from gym_pybullet_drones.envs.Aviary import Aviary
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.MultiHoverAviary import MultiHoverAviary
 from gym_pybullet_drones.utils.enums import ObservationType, ActionType
 from gym_pybullet_drones.utils.utils import sync
 
 # === CONFIG ===
-MODEL_PATH = "/home/om/drone/gym-pybullet-drones/gym_pybullet_drones/examples/results/save-08.09.2025_07.49.19/final_model"  # path to your trained model
+MODEL_PATH = "/home/om/drone/gym-pybullet-drones/Results/save-08.15.2025_13.56.32/best_model"  # path to your trained model
 MULTIAGENT = False  # change to True if you trained MultiHoverAviary
 NUM_DRONES = 1
 GUI = True 
@@ -16,9 +17,9 @@ RECORD_VIDEO = True
 
 # === CREATE ENVIRONMENT ===
 
-env = HoverAviary(gui=GUI,
+env = Aviary(gui=GUI,
                         obs=ObservationType.KIN,
-                        act=ActionType.ONE_D_RPM,
+                        act=ActionType.RPM,
                         record=True)
 
 
@@ -26,7 +27,7 @@ env = HoverAviary(gui=GUI,
 model = PPO.load(MODEL_PATH)
 
 # === RESET ENV ===
-obs, info = env.reset(seed=42, options={})
+obs, info = env.reset(seed=5, options={})
 print(np.shape(obs), "---------------------------------------- obs")
 
 start = time.time()
@@ -40,7 +41,9 @@ for i in range((env.EPISODE_LEN_SEC+2)*env.CTRL_FREQ):
 
     print("---------------action-----------", action, "--------------action------------")
     print("----------------------------Reward--------------",reward, "----------------------------Reward--------------")
+    print(np.shape(obs), "---------------------------------------- obs")
     env.render()
+    print(env._computeInfo())
     sync(i, start, env.CTRL_TIMESTEP)
 
     if terminated:

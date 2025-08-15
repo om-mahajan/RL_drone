@@ -14,23 +14,41 @@ class Aviary(BaseRLAviary):
                 gui=False,
                 record=False,
                 obs: ObservationType=ObservationType.KIN,
-                act: ActionType=ActionType.RPM
+                act: ActionType=ActionType.RPM,
+                include_action_history: bool = False
                 ):
         self.TARGET_POS = np.array([1,0,1])
         self.EPISODE_LEN_SEC = 8
 
         super().__init__(drone_model=drone_model,
-                    num_drones=1,
-                    initial_xyzs=initial_xyzs,
-                    initial_rpys=initial_rpys,
-                    physics=physics,
-                    pyb_freq=pyb_freq,
-                    ctrl_freq=ctrl_freq,
-                    gui=gui,
-                    record=record,
-                    obs=obs,
-                    act=act
-                    )
+                          num_drones=1,
+                          initial_xyzs=initial_xyzs,
+                          initial_rpys=initial_rpys,
+                          physics=physics,
+                          pyb_freq=pyb_freq,
+                          ctrl_freq=ctrl_freq,
+                          gui=gui,
+                          record=record,
+                          obs=obs,
+                          act=act,
+                          include_action_history=include_action_history
+                          )
+
+    def reset(self, seed=None, options=None):
+        """Reset with random starting position in a 1m radius circle at z=0."""
+        # Generate random position in circle of radius 1m at ground level
+        angle = np.random.uniform(0, 2 * np.pi)
+        radius = np.random.uniform(0, 1.0)  # Random radius up to 1m
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        z = 0.0125  # Minimum safe height: half collision height (2.5cm/2 = 1.25cm)
+        
+        # Set the random initial position
+        self.INIT_XYZS = np.array([[x, y, z]])
+        
+        # Call parent reset
+        return super().reset(seed=seed, options=options)
+
     def _computeReward(self):
         s = self._getDroneStateVector(0)
         d = np.linalg.norm(self.TARGET_POS - s[0:3])

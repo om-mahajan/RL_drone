@@ -20,18 +20,13 @@ from wandb.integration.sb3 import WandbCallback
 
 def run(multiagent=False, output_folder='Results', gui=True, plot=True, colab=False, record_video=True, local=True):
 
-    filename = os.path.join(output_folder, 'save-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S"))
-    if not os.path.exists(filename):
-        os.makedirs(filename+'/')
-
-    
     train_env = make_vec_env(Aviary,
-                            env_kwargs=dict(obs=ObservationType('kin'), act=ActionType('rpm'), include_action_history=False),
-                            n_envs=8,
-                            seed=0
+                            env_kwargs=dict(obs=ObservationType('kin'), act=ActionType('rpm')),
+                            n_envs=1,
+                            seed=1
                             )
     train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.)
-    eval_env = DummyVecEnv([lambda: Aviary(obs=ObservationType('kin'), act=ActionType('rpm'), include_action_history=False)])
+    eval_env = DummyVecEnv([lambda: Aviary(obs=ObservationType('kin'), act=ActionType('rpm'))])
     eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True, clip_obs=10.)
 
     # Set evaluation env to not update stats
@@ -50,53 +45,14 @@ def run(multiagent=False, output_folder='Results', gui=True, plot=True, colab=Fa
     Model = PPO("MlpPolicy", train_env,learning_rate=learning_rate,n_steps=n_steps,batch_size=batch_size,n_epochs=n_epochs,gamma=gamma,clip_range=clip_range,target_kl=target_kl,policy_kwargs=policy_kwargs,verbose=1,tensorboard_log="./tb_logs/")
     target_reward = 467
     
-    wandb.init(
-    entity = "IITmRL",
-    project="RLDrone",
-    config={
-        "policy_type": "MlpPolicy",
-        "total_timesteps": 1e7,
-        "env_name": "Aviary",
-        "learning_rate": learning_rate,
-        "n_steps": n_steps,
-        "batch_size": batch_size,
-        "n_epochs": n_epochs,
-        "gamma": gamma,
-        "policy_kwargs": dict(activation_fn=th.nn.Tanh, net_arch=[128, 128])
-    },
-    sync_tensorboard=True,   # Auto-sync TensorBoard metrics
-    monitor_gym=False,       # Auto-upload agent videos (requires Monitor wrapper)
-    save_code=True           # Save the training code
-    )
-
     callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=target_reward,
                                                      verbose=1)
-    eval_callback = EvalCallback(eval_env,
-                                 callback_on_new_best=callback_on_best,
-                                 verbose=1,
-                                 best_model_save_path=filename+'/',
-                                 log_path=filename+'/',
-                                 eval_freq=int(1000),
-                                 deterministic=True,
-                                 render=True)
+    obs= train_env.reset()
+    print(np.shape(obs), 'obs shape')
+    print(obs,'obs')
+    obs, reward, terminated, truncated, info = train_env.step([1,1,0,0])
+    print(reward,np.shape(obs))
     
-    wandb_callback = WandbCallback(
-    gradient_save_freq=100,
-    model_save_path=filename+'/',
-    verbose=2
-    )
-
-    Model.learn(total_timesteps=int(1e7) if local else int(1e2), # shorter training in GitHub Actions pytest
-                    callback=[eval_callback,wandb_callback],
-                    log_interval=100,progress_bar=True)
-    
-    Model.save(filename+'/final_model.zip')
-    print(filename)
-
-    #### Print training progression ############################
-    with np.load(filename+'/evaluations.npz') as data:
-        for j in range(data['timesteps'].shape[0]):
-            print(str(data['timesteps'][j])+","+str(data['results'][j][0]))
 
 
 if __name__ == '__main__':
