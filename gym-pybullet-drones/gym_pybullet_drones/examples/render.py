@@ -9,7 +9,7 @@ from gym_pybullet_drones.utils.enums import ObservationType, ActionType
 from gym_pybullet_drones.utils.utils import sync
 
 # === CONFIG ===
-MODEL_PATH = "/home/om/drone/gym-pybullet-drones/Results/save-08.15.2025_13.56.32/best_model"  # path to your trained model
+MODEL_PATH = "/home/om/drone/gym-pybullet-drones/Results/save-08.15.2025_16.41.16/best_model"  # path to your trained model
 MULTIAGENT = False  # change to True if you trained MultiHoverAviary
 NUM_DRONES = 1
 GUI = True 

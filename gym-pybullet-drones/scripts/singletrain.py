@@ -48,7 +48,7 @@ def run(multiagent=False, output_folder='Results', gui=True, plot=True, colab=Fa
     gamma = 0.99
     policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=[128, 128])
     Model = PPO("MlpPolicy", train_env,learning_rate=learning_rate,n_steps=n_steps,batch_size=batch_size,n_epochs=n_epochs,gamma=gamma,clip_range=clip_range,target_kl=target_kl,policy_kwargs=policy_kwargs,verbose=1,tensorboard_log="./tb_logs/")
-    target_reward = 467
+    target_reward = 220
     
     wandb.init(
     entity = "IITmRL",

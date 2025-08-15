@@ -56,7 +56,7 @@ class Aviary(BaseRLAviary):
         tilt = np.linalg.norm(s[7:9])         # roll/pitch rates or angles in your layout
         vel  = np.linalg.norm(s[10:13])       # linear velocity
 
-        r = 2.0 - d**2 - 0.05*vel**2 - 0.1*tilt**2
+        r = self.TARGET_POS[2] - d**2 - 0.05*vel**2 - 0.1*tilt**2
         return float(np.clip(r, 0.0, 2.0))
     def _computeTerminated(self):
         s = self._getDroneStateVector(0)
